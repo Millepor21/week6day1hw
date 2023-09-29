@@ -1,3 +1,4 @@
 .env
 movie_collection_venv/
 __pycache__/
+migrations/

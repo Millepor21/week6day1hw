@@ -1,3 +1,4 @@
+from datetime import datetime
 from app import db
 
 class ReviewModel(db.Model):
@@ -8,7 +9,10 @@ class ReviewModel(db.Model):
     username = db.Column(db.String, nullable = False)
     stars = db.Column(db.String, nullable = False)
     body = db.Column(db.String, nullable = False)
-    movie_id = db.Column(db.String, nullable = False)
+    timestamp = db.Column(db.String, default = datetime.utcnow)
+    movie_id = db.Column(db.Integer, db.ForeignKey('movies.id'), nullable = False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    
 
     def __repr__(self):
         return f'<Stars: {self.stars}>\n<Review: {self.body}>'

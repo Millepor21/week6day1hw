@@ -1,5 +1,5 @@
 from flask_smorest import Blueprint
 
-bp = Blueprint('movies',__name__,url_prefix='/movies')
+bp = Blueprint('movies',__name__)
 
 from . import routes

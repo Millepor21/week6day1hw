@@ -1,48 +1,43 @@
-from flask import request
-from uuid import uuid4
+from flask.views import MethodView
+from flask_smorest import abort
+from schemas import MovieSchema, DeleteMovie, UpdateMovieSchema
+from . import bp
+from .MovieModel import MovieModel
 
-from app import app
-from db import movies, reviews
+@bp.route('/movies')
+class MovieList(MethodView):
+    
+    @bp.response(200, MovieSchema(many = True))
+    def get(self):
+        return MovieModel.query.all()
+    
+    @bp.arguments(MovieSchema)
+    @bp.response(201, MovieSchema)
+    def post(self, movie_data):
+        movie = MovieModel()
+        movie.from_dict(movie_data)
+        movie.save()
+        return movie_data
 
-@app.get('/movies')
-def get_movies():
-    return {'movies': movies}, 200
+    @bp.arguments(DeleteMovie)
+    def delete(self, movie_data):
+        movie = MovieModel.query.filter_by(movie_id=movie_data['id'], title=movie_data['title']).first()
+        if movie:
+            movie.delete()
+            return {'message':f'{movie_data["title"]} information deleted'}
+        abort(400, message='Title or Movie_id invalid')
 
-@app.get('/movies/<movie_id>')
-def get_movie(movie_id):
-    try:
-        movie = movies[movie_id]
-        return movie, 200
-    except KeyError:
-        return {'message': 'Movie not found'}, 400
+@bp.route('/movies/<movie_id>')
+class Movie(MethodView):
 
-@app.post('/movies')
-def add_movie():
-    movie_data = request.get_json()
-    movies[uuid4().hex] = movie_data
-    return movie_data, 201
-
-@app.put('/movies/<movie_id>')
-def update_movie(movie_id):
-    movie_data = request.get_json()
-    try:
-        movie = movies[movie_id]
-        movie['Title'] = movie_data['Title']
-        return movie, 200
-    except KeyError:
-        return {'message': 'Movie not found'}, 400
-
-@app.delete('/movies')
-def delete_movie():
-    movie_data = request.get_json()
-    for i, movie in enumerate(movies):
-        if movie["Title"] == movie_data["Title"]:
-            movies.pop(i)
-    return {'message':f'{movie_data["Title"]} deleted'}, 202
-
-@app.get('/movies/<movie_id>/reviews')
-def get_movie_reviews(movie_id):
-    if movie_id not in movies:
-        return {'message': 'Movie not found'}, 400
-    movie_reviews = [review for review in reviews.values() if review['movie_id'] == movie_id]
-    return movie_reviews, 200
+    @bp.response(200, MovieSchema)
+    def get(self, movie_id):
+        return MovieModel.query.get_or_404(movie_id, description='Movie not found')
+    
+    @bp.arguments(UpdateMovieSchema)
+    @bp.response(202, MovieSchema)
+    def put(self, movie_data, movie_id):
+        movie = MovieModel.query.get_or_404(movie_id, description='Movie not found')
+        if movie:
+            movie.from_dict(movie_data)
+            movie.save()
